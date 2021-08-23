@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: icdpostgres-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      run: clouddb-demo
+  template:
+    metadata:
+      name: icdpostgres-app
+      labels:
+        run: clouddb-demo
+    spec:
+      containers:
+      - name: cloudpostgres-nodejs-app
+        image: "us.icr.io/bokai-cr/icdpg"
+        imagePullPolicy: Always
+        env:
+        - name: BINDING
+          valueFrom:
+            secretKeyRef:
+              name: binding-postgresql-bokai
+              key: binding
+        readinessProbe:
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          timeoutSeconds: 10
+          httpGet:
+            path: /healthz?source=readinessProbe
+            port: 8080
+# with VPC: kubectl expose deployment/icdpostgres-app --type=LoadBalancer --name=db-lb-svc --port=8080 --target-port=8080
+#---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: cloudpostgres-service
+#  labels:
+#    run: clouddb-demo
+#spec:
+#  type: NodePort
+#  selector:
+#    run: clouddb-demo
+#  ports:
+#  - protocol: TCP
+#    port: 8080
+#    nodePort: 30082
